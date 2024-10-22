@@ -3,54 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта с точками и таблица из CSV</title>
+    <title>PetMetrics</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Подключаем CSS файл -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <style>
-        #map {
-            height: 500px;
-            width: 70%; /* Изменено для освободить место для информации */
-            margin-top: 20px;
-            float: left; /* Добавлено для размещения карты и блока информации рядом */
-        }
-        #info {
-            width: 25%; /* Ширина блока информации */
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid black;
-            float: right; /* Располагает блок информации справа */
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 </head>
 <body>
-    <h1>Данные из CSV</h1>
+    <h1>Измерение милости питомцев</h1>
     
     <div id="map"></div>
 
     <div id="info">
-        <h2>Информация о точке:</h2>
-		<p id="pointID">ID: </p>
+        <h2>Информация о точке наблюдения:</h2>
+        <p id="pointID">ID: </p>
         <p id="pointName">Выберите маркер на карте.</p>
         <p id="pointDescription"></p>
-		<img id="pointImage" src="" alt="Изображение точки" style="display: none; max-width: 100%; margin-top: 10px;" /> <!-- Изображение -->
+        <img id="pointImage" src="" alt="Изображение точки" style="display: none; max-width: 100%; margin-top: 10px;" /> <!-- Изображение -->
     </div>
 
-    
+    <!-- Основная таблица -->
     <table id="dataTable">
         <thead>
             <tr>
-				<th>ID</th> 
+                <th>ID</th> 
                 <th>Name</th>
                 <th>LAT</th>
                 <th>LONG</th>
@@ -60,7 +36,18 @@
         <tbody></tbody>
     </table>
 
+    <!-- Новая таблица для данных из CSV по точке -->
+    <h2>Данные по точке:</h2>
+    <table id="pointDataTable">
+        <thead>
+            <tr></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+	
     <script>
         // Инициализация карты с координатами центра и уровнем масштабирования
         const map = L.map('map').setView([51.505, -0.09], 2);
@@ -80,7 +67,9 @@
             const rows = csvText.split('\n');
             const tableBody = document.querySelector('#dataTable tbody');
             tableBody.innerHTML = '';  // Очищаем таблицу перед добавлением данных
-
+			
+			const markers = L.markerClusterGroup();
+			
             for (let i = 1; i < rows.length; i++) {  // Пропускаем первую строку с заголовками
                 const row = rows[i].split(',');
                 if (row.length === 5) {  // Проверяем, что есть 4 колонки
@@ -94,7 +83,9 @@
                     const marker = L.marker([lat, long]).addTo(map)
                         .bindPopup(`<b>${name}</b><br>${description}`)
                         .on('click', () => displayPointInfo(name, description,id)); // Вызываем функцию при клике на маркер
-
+					
+					markers.addLayer(marker);
+					
                     // Добавляем строку в таблицу
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -107,31 +98,87 @@
                     tableBody.appendChild(tr);
                 }
             }
+			map.addLayer(markers);
         }
 
         // Функция для отображения информации о точке
         function displayPointInfo(name, description, id) {
-            document.getElementById('pointName').textContent = `Название: ${name}`;
-			document.getElementById('pointDescription').textContent = `Описание: ${description}`;
-			document.getElementById('pointID').textContent = `ID: ${id}`;
-			
-			const imagePath = `${id}.jpg`;
-			const imgElement = document.getElementById('pointImage');
-			imgElement.src = imagePath; // Устанавливаем путь к изображению
-			
-			const imgCheck = new Image();
-			imgCheck.src = imagePath;
+    document.getElementById('pointName').textContent = `Название: ${name}`;
+    document.getElementById('pointDescription').textContent = `Описание: ${description}`;
+    document.getElementById('pointID').textContent = `ID: ${id}`;
 
-			imgCheck.onload = function() {
-        // Если изображение загружается успешно, показываем его
-			imgElement.style.display = 'block';
-		};
+    const imagePath = `${id}.jpg`;
+    const imgElement = document.getElementById('pointImage');
+    imgElement.src = imagePath; // Устанавливаем путь к изображению
 
-		imgCheck.onerror = function() {
-        // Если изображение не загружается, скрываем элемент
+    const imgCheck = new Image();
+    imgCheck.src = imagePath;
+
+    imgCheck.onload = function () {
+        imgElement.style.display = 'block';
+    };
+
+    imgCheck.onerror = function () {
         imgElement.style.display = 'none';
     };
-        }
+
+    // Очищаем и скрываем таблицу данных по точке
+    const tableBody = document.querySelector('#pointDataTable tbody');
+    tableBody.innerHTML = '';  // Очищаем предыдущие данные
+    document.getElementById('pointDataTable').style.display = 'none'; // Скрываем таблицу
+
+    // Загружаем соответствующий CSV файл для этого ID
+    fetch(`${id}.csv`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки файла');
+            }
+            return response.text();
+        })
+        .then(data => displayCsvData(data))
+        .catch(error => console.error('Ошибка:', error));
+}
+
+// Функция для отображения данных из CSV
+function displayCsvData(csvText) {
+    const rows = csvText.split('\n');
+    const tableBody = document.querySelector('#pointDataTable tbody');
+    tableBody.innerHTML = '';  // Очищаем предыдущие данные
+
+    // Создаем заголовки на основе первой строки
+    const headerRow = rows[0].split(',');
+    const headerBody = document.querySelector('#pointDataTable thead tr');
+    headerBody.innerHTML = ''; // Очищаем предыдущие заголовки
+
+    // Добавляем заголовки
+    headerRow.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.trim(); // Убираем лишние пробелы
+        headerBody.appendChild(th);
+    });
+
+    // Добавляем строки данных, начиная со второй строки
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i].split(',');
+        const tr = document.createElement('tr');
+        
+        row.forEach(col => {
+            const td = document.createElement('td');
+            td.textContent = col.trim(); // Убираем лишние пробелы
+            tr.appendChild(td);
+        });
+        
+        tableBody.appendChild(tr);
+    }
+
+    // Показываем новую таблицу, если в ней есть данные
+    if (tableBody.children.length > 0) {
+        document.getElementById('pointDataTable').style.display = 'table'; // Показываем таблицу
+    } else {
+        document.getElementById('pointDataTable').style.display = 'none'; // Скрываем, если данных нет
+    }
+}
     </script>
-</body>
+	
+	</body>
 </html>

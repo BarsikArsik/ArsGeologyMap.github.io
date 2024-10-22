@@ -1,7 +1,57 @@
 body {
-    background-color: lightblue;
+    background-color: #f0f0f0; /* Светло-серый фон */
+    font-family: Arial, sans-serif; /* Изменение шрифта на более современный */
+    padding: 20px;
 }
+
 h1 {
-    color: blue;
-    text-align: center;
+    text-align: center; /* Выровнять заголовок по центру */
+    color: #333; /* Цвет текста заголовка */
+    margin-top: 20px; /* Отступ сверху */
+}
+
+#map {
+    height: 500px;
+    width: 70%;
+    margin-top: 20px;
+    float: left;
+    border-radius: 25px; /* Закругленные углы карты */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Легкая тень для глубины */
+	overflow: hidden;
+	margin-bottom: 20px
+}
+
+#info {
+    width: 25%;
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 8px; /* Закругленные углы блока информации */
+    float: right;
+    background-color: #fff; /* Белый фон для блока информации */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Легкая тень для блока информации */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f7f7f7; /* Светло-серый фон для заголовков таблицы */
+    font-weight: bold; /* Полужирный шрифт для заголовков */
+}
+
+tr:hover {
+    background-color: #f1f1f1; /* Цвет строки при наведении */
 }
